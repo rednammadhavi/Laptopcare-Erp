@@ -43,17 +43,20 @@ export const CustomersList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {customers.map((c) => (
-                                <tr key={c.id} className="border-t">
-                                    <td className="p-2">{c.name}</td>
-                                    <td className="p-2">{c.phone}</td>
-                                    <td className="p-2">
-                                        <Link to={`/customers/${c.id}`} className="text-blue-600">
-                                            View
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
+                            {customers.map((c) => {
+                                const id = c._id || c.id;
+                                return (
+                                    <tr key={id} className="border-t">
+                                        <td className="p-2">{c.name}</td>
+                                        <td className="p-2">{c.phone}</td>
+                                        <td className="p-2">
+                                            <Link to={`/customers/${id}`} className="text-blue-600">
+                                                View
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 )}

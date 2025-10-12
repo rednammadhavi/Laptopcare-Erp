@@ -8,7 +8,8 @@ import { CustomerDetail } from "./pages/Customers/CustomerDetail";
 import { JobsPage } from "./pages/Jobs";
 import { InventoryPage } from "./pages/Inventory";
 import { ReportsPage } from "./pages/Reports";
-import { LoginPage } from "./pages/Login";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/register";
 
 const RequireAuth = ({ children }) => {
   const { user } = useAuth();
@@ -21,7 +22,8 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           <Route
             path="/"
