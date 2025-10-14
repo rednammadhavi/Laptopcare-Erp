@@ -1,9 +1,15 @@
 import React from "react";
 import { useAuth } from "../context/AuthContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export const Topbar = () => {
-    const { user, logout } = useAuth();
+    const { user, logoutUser } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        await logoutUser();
+        navigate("/login"); // redirect after logout
+    };
 
     return (
         <header className="flex items-center justify-between p-3 border-b bg-white">
@@ -18,7 +24,10 @@ export const Topbar = () => {
                     Settings
                 </button>
                 {user ? (
-                    <button className="text-sm px-3 py-1 rounded border" onClick={logout}>
+                    <button
+                        className="text-sm px-3 py-1 rounded border"
+                        onClick={handleLogout}
+                    >
                         Logout
                     </button>
                 ) : (

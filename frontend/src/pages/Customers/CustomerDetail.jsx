@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { apiService } from "../../services/apiService";
+import {
+    getCustomer,
+    createCustomer,
+    updateCustomer,
+    getUsers
+} from "../../api/api"; // import individual APIs
 
 export const CustomerDetail = () => {
     const navigate = useNavigate();
@@ -21,11 +26,11 @@ export const CustomerDetail = () => {
         const loadData = async () => {
             setLoading(true);
             try {
-                const techRes = await apiService.getUsers({ role: "technician" });
+                const techRes = await getUsers({ role: "Technician" });
                 setTechnicians(techRes.data);
 
                 if (!isNew) {
-                    const res = await apiService.getCustomer(id);
+                    const res = await getCustomer(id);
                     setFormData(res.data);
                 }
             } catch (err) {
@@ -37,13 +42,14 @@ export const CustomerDetail = () => {
         loadData();
     }, [id]);
 
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (e) =>
+        setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            if (isNew) await apiService.createCustomer(formData);
-            else await apiService.updateCustomer(id, formData);
+            if (isNew) await createCustomer(formData);
+            else await updateCustomer(id, formData);
             navigate("/customers");
         } catch (err) {
             console.error(err);
@@ -114,7 +120,9 @@ export const CustomerDetail = () => {
                         >
                             <option value="">Select Technician</option>
                             {technicians.map((t) => (
-                                <option key={t._id} value={t._id}>{t.name}</option>
+                                <option key={t._id} value={t._id}>
+                                    {t.name}
+                                </option>
                             ))}
                         </select>
                     </div>

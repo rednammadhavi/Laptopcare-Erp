@@ -1,0 +1,42 @@
+import axios from "axios";
+
+const api = axios.create({
+    baseURL: "/api",
+    timeout: 5000,
+});
+
+// Set JWT token
+export const setToken = (token) => {
+    if (token) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    else delete api.defaults.headers.common["Authorization"];
+};
+
+// Auth
+export const login = (data) => api.post("/auth/login", data);
+export const register = (data) => api.post("/auth/register", data);
+export const logout = () => api.post("/auth/logout");
+
+// Customers
+export const getCustomers = () => api.get("/customers");
+export const getCustomer = (id) => api.get(`/customers/${id}`);
+export const createCustomer = (data) => api.post("/customers", data);
+export const updateCustomer = (id, data) => api.put(`/customers/${id}`, data);
+
+// Jobs
+export const getJobs = () => api.get("/jobs");
+export const createJob = (data) => api.post("/jobs", data);
+export const updateJob = (id, data) => api.put(`/jobs/${id}`, data);
+
+// Inventory
+export const getInventory = () => api.get("/inventory");
+export const createInventory = (data) => api.post("/inventory", data);
+export const updateInventory = (id, data) => api.put(`/inventory/${id}`, data);
+export const deleteInventory = (id) => api.delete(`/inventory/${id}`);
+
+// Reports
+export const getReports = () => api.get("/reports");
+
+// Users
+export const getUsers = (params) => api.get("/auth/users", { params });
+
+export default api;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiService } from "../../services/apiService";
+import { getCustomers } from "../../api/api";
 
 export const CustomersList = () => {
     const [customers, setCustomers] = useState([]);
@@ -8,7 +8,7 @@ export const CustomersList = () => {
 
     const loadCustomers = async () => {
         try {
-            const res = await apiService.getCustomers();
+            const res = await getCustomers();
             setCustomers(res.data);
         } catch (err) {
             console.error("Error fetching customers", err);

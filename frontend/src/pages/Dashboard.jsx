@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Card } from "../components/Card";
-import { apiService } from "../services/apiService";
+import { getReports } from "../api/api";
 
 export const Dashboard = () => {
     const [data, setData] = useState({
@@ -11,8 +11,12 @@ export const Dashboard = () => {
 
     useEffect(() => {
         const fetchReports = async () => {
-            const res = await apiService.getReports();
-            setData(res.data);
+            try {
+                const res = await getReports();
+                setData(res.data);
+            } catch (error) {
+                console.error("Error fetching reports:", error);
+            }
         };
         fetchReports();
     }, []);

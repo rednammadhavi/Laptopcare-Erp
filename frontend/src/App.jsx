@@ -6,10 +6,14 @@ import { Dashboard } from "./pages/Dashboard";
 import { CustomersList } from "./pages/Customers/CustomersList";
 import { CustomerDetail } from "./pages/Customers/CustomerDetail";
 import { JobsPage } from "./pages/Jobs";
-import { InventoryPage } from "./pages/Inventory";
+import { Inventory } from "./pages/Inventory";
 import { ReportsPage } from "./pages/Reports";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/register";
+import { Login } from "./pages/auth/Login";
+import { Register } from "./pages/auth/Register";
+import { NotFound } from "./pages/NotFound";
+import { ForgotPassword } from "./pages/auth/ForgotPassword";
+import { ResetPassword } from "./pages/auth/ResetPassword";
+
 
 const RequireAuth = ({ children }) => {
   const { user } = useAuth();
@@ -24,6 +28,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           <Route
             path="/"
@@ -35,6 +41,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+
           <Route
             path="/customers"
             element={
@@ -70,7 +77,7 @@ export default function App() {
             element={
               <RequireAuth>
                 <Layout>
-                  <InventoryPage />
+                  <Inventory />
                 </Layout>
               </RequireAuth>
             }
@@ -85,7 +92,7 @@ export default function App() {
               </RequireAuth>
             }
           />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

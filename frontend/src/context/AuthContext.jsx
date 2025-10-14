@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { apiService } from "../services/apiService";
+import { login, logout, setToken as setApiToken } from "../api/api";
 
 const AuthContext = createContext(null);
 
@@ -11,30 +11,35 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user")) || null);
-    const [token, setToken] = useState(() => localStorage.getItem("token") || null);
+    const [token, setTokenState] = useState(() => localStorage.getItem("token") || null);
 
     useEffect(() => {
-        apiService.setToken(token);
+        setApiToken(token);
     }, [token]);
 
-    const login = async (email, password) => {
-        const { data } = await apiService.login({ email, password });
+    const loginUser = async (email, password) => {
+        const { data } = await login({ email, password });
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         setUser(data.user);
-        setToken(data.token);
+        setTokenState(data.token);
     };
 
-    const logout = async () => {
-        await apiService.logout();
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        setUser(null);
-        setToken(null);
+    const logoutUser = async () => {
+        try {
+            await logout(); // call backend logout
+        } catch (err) {
+            console.error("Backend logout failed", err);
+        } finally {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            setUser(null);
+            setTokenState(null);
+        }
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, loginUser, logoutUser }}>
             {children}
         </AuthContext.Provider>
     );
