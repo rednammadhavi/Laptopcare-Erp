@@ -1,9 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:5000/api", 
-    withCredentials: true,
-    timeout: 8000,
+    baseURL: "/api",
+    timeout: 5000,
 });
 
 export const apiService = {
@@ -12,11 +11,29 @@ export const apiService = {
         else delete api.defaults.headers.common["Authorization"];
     },
 
-    login: (email, password) =>
-        api.post("/auth/login", { email, password }),
+    // Auth
+    login: (data) => api.post("/auth/login", data),
+    register: (data) => api.post("/auth/register", data),
+    logout: () => api.post("/auth/logout"),
 
-    register: (payload) =>
-        api.post("/auth/register", payload),
-
+    // Customers
     getCustomers: () => api.get("/customers"),
+    getCustomer: (id) => api.get(`/customers/${id}`),
+    createCustomer: (data) => api.post("/customers", data),
+    updateCustomer: (id, data) => api.put(`/customers/${id}`, data),
+
+    // Jobs
+    getJobs: () => api.get("/jobs"),
+    createJob: (data) => api.post("/jobs", data),
+    updateJob: (id, data) => api.put(`/jobs/${id}`, data),
+
+    // Inventory
+    getInventory: () => api.get("/inventory"),
+    addInventory: (data) => api.post("/inventory", data),
+
+    // Reports
+    getReports: () => api.get("/reports"),
+
+    // Users
+    getUsers: (params) => api.get("/auth/users", { params }),
 };

@@ -1,44 +1,126 @@
 import { User } from "../models/User.models.js";
-import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
+// Generate JWT token
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+};
+
+// Register user
 const registerUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-        const hashed = await bcrypt.hash(password, 10);
-        const user = await User.create({ name, email, password: hashed, role });
-        res.status(201).json(user);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+        const userExists = await User.findOne({ email });
+        if (userExists) return res.status(400).json({ message: "User already exists" });
+
+        const user = await User.create({ name, email, password, role });
+        res.status(201).json({
+            token: generateToken(user._id),
+            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
+// Login user
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "User not found" });
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
-
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
-        res.json({ token, user });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+        if (user && await user.matchPassword(password)) {
+            res.json({
+                token: generateToken(user._id),
+                user: { id: user._id, name: user.name, email: user.email, role: user.role }
+            });
+        } else {
+            res.status(401).json({ message: "Invalid credentials" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
-let tokenBlacklist = [];
-
-export const logoutUser = (req, res) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(400).json({ message: "No token provided" });
-    tokenBlacklist.push(token);
-    res.json({ message: "Logged out successfully" });
+// Logout user
+const logoutUser = async (req, res) => {
+    res.json({ message: "User logged out successfully" });
 };
 
-export const isTokenBlacklisted = (token) => tokenBlacklist.includes(token);
+// Forgot password
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-export { registerUser, loginUser };
+        const resetToken = crypto.randomBytes(20).toString("hex");
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpire = Date.now() + 3600000; // 1 hour
+        await user.save();
 
+        // TODO: Send token via email
+        res.json({ message: "Password reset token generated", resetToken });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Reset password
+const resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+
+        if (!user) return res.status(400).json({ message: "Invalid or expired token" });
+
+        user.password = newPassword;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save();
+
+        res.json({ message: "Password reset successful" });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get user details
+const getUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select("-password");
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Update user details
+const updateUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        user.name = req.body.name || user.name;
+        user.email = req.body.email || user.email;
+        if (req.body.password) user.password = req.body.password;
+
+        await user.save();
+        res.json({ message: "User updated successfully", user });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+export {
+    registerUser,
+    loginUser,
+    logoutUser,
+    forgotPassword,
+    resetPassword,
+    getUser,
+    updateUser
+};

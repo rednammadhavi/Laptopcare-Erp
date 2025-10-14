@@ -1,38 +1,41 @@
-import React, { useState, useEffect } from "react";
-import { apiService } from "../../services/apiService";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { apiService } from "../../services/apiService";
 
 export const CustomersList = () => {
     const [customers, setCustomers] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const load = async () => {
-        setLoading(true);
-        const res = await apiService.getCustomers();
-        setCustomers(res.data);
-        setLoading(false);
+    const loadCustomers = async () => {
+        try {
+            const res = await apiService.getCustomers();
+            setCustomers(res.data);
+        } catch (err) {
+            console.error("Error fetching customers", err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
-        load();
+        loadCustomers();
     }, []);
 
     return (
         <div>
-            <h1 className="text-2xl font-semibold mb-4">Customers</h1>
-            <div className="flex justify-between mb-4">
-                <div className="flex gap-2">
-                    <input className="p-2 border rounded" placeholder="Search customers..." />
-                    <button className="px-3 py-2 bg-blue-600 text-white rounded">Search</button>
-                </div>
-                <Link to="/customers/new" className="px-3 py-2 border rounded">
-                    New Customer
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-semibold">Customers</h1>
+                <Link
+                    to="/customers/new"
+                    className="px-3 py-2 bg-blue-600 text-white rounded"
+                >
+                    Add New
                 </Link>
             </div>
 
             <div className="bg-white border rounded">
                 {loading ? (
-                    <div className="p-4">Loading...</div>
+                    <div className="p-4 text-gray-600">Loading...</div>
                 ) : (
                     <table className="w-full text-left">
                         <thead className="bg-gray-100">
@@ -43,20 +46,20 @@ export const CustomersList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {customers.map((c) => {
-                                const id = c._id || c.id;
-                                return (
-                                    <tr key={id} className="border-t">
-                                        <td className="p-2">{c.name}</td>
-                                        <td className="p-2">{c.phone}</td>
-                                        <td className="p-2">
-                                            <Link to={`/customers/${id}`} className="text-blue-600">
-                                                View
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                            {customers.map((c) => (
+                                <tr key={c._id} className="border-t">
+                                    <td className="p-2">{c.name}</td>
+                                    <td className="p-2">{c.phone}</td>
+                                    <td className="p-2">
+                                        <Link
+                                            to={`/customers/${c._id}`}
+                                            className="text-blue-600"
+                                        >
+                                            View/Edit
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 )}

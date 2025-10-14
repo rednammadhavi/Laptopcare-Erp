@@ -1,15 +1,37 @@
 import { Job } from "../models/Job.models.js";
 
-export const getJobs = async (req, res) => {
-    const jobs = await Job.find().populate("customer");
+// Get jobs
+const getJobs = async (req, res) => {
+    const jobs = await Job.find()
+        .populate("customer", "name")
+        .populate("technician", "name");
     res.json(jobs);
 };
 
-export const createJob = async (req, res) => {
-    try {
-        const newJob = await Job.create(req.body);
-        res.status(201).json(newJob);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
+// Create job
+const createJob = async (req, res) => {
+    const job = await Job.create(req.body);
+    res.status(201).json(job);
+};
+
+// Update job
+const updateJob = async (req, res) => {
+    const job = await Job.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    res.json(job);
+};
+
+// Delete job
+const deleteJob = async (req, res) => {
+    const job = await Job.findByIdAndDelete(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    res.json({ message: "Job deleted successfully" });
+};
+
+
+export {
+    getJobs,
+    createJob,
+    updateJob,
+    deleteJob
 };
