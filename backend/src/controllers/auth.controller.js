@@ -1,5 +1,4 @@
 import { User } from "../models/User.models.js";
-import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
@@ -14,8 +13,7 @@ const registerUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
-        // Validate role
-        const validRoles = ["admin", "manager", "technician"];
+        const validRoles = ["admin", "manager", "technician", "receptionist"];
         if (!validRoles.includes(role)) {
             return res.status(400).json({ message: "Invalid role" });
         }

@@ -114,6 +114,7 @@ export const Login = () => {
                                     }`}
                             >
                                 <option value="select">Select</option>
+                                <option value="receptionist">Receptionist</option>
                                 <option value="technician">Technician</option>
                                 <option value="manager">Manager</option>
                                 <option value="admin">Admin</option>
