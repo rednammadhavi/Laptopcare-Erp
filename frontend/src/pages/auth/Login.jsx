@@ -7,20 +7,40 @@ import bgImage from "../../assets/bg.jpg";
 
 export const Login = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const { loginUser } = useAuth();
+    const [form, setForm] = useState({
+        email: "",
+        password: "",
+        role: "select"
+    });
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [roleError, setRoleError] = useState("");
+
+    const handleChange = (e) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+        // Clear role error when user starts selecting
+        if (e.target.name === "role") {
+            setRoleError("");
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
+        setRoleError("");
+
+        // Validate role selection only on submit
+        if (form.role === "select") {
+            setRoleError("Please select a role");
+            setLoading(false);
+            return;
+        }
 
         try {
-            const { data } = await apiLogin({ email, password });
+            const { data } = await apiLogin(form);
             if (data.token) {
                 localStorage.setItem("token", data.token);
                 apiSetToken(data.token);
@@ -28,7 +48,7 @@ export const Login = () => {
             if (data.user) {
                 localStorage.setItem("user", JSON.stringify(data.user));
             }
-            await login(data.user || { name: email });
+            await loginUser(data.user);
             navigate("/");
         } catch (err) {
             setError(err.response?.data?.message || "Login failed");
@@ -66,7 +86,7 @@ export const Login = () => {
                         </li>
                         <li className="flex items-center justify-center md:justify-start gap-3">
                             <span className="w-2 h-2 bg-blue-300 rounded-full"></span>
-                            Inventory management
+                            Role-based access control
                         </li>
                     </ul>
                 </div>
@@ -81,6 +101,28 @@ export const Login = () => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Role Selection */}
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">
+                                Login As
+                            </label>
+                            <select
+                                name="role"
+                                value={form.role}
+                                onChange={handleChange}
+                                className={`w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${roleError ? "border-red-300" : "border-gray-200"
+                                    }`}
+                            >
+                                <option value="select">Select</option>
+                                <option value="technician">Technician</option>
+                                <option value="manager">Manager</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            {roleError && (
+                                <p className="text-red-500 text-xs mt-1">{roleError}</p>
+                            )}
+                        </div>
+
                         {/* Email */}
                         <div>
                             <label className="block text-sm font-medium mb-1 text-gray-700">
@@ -88,8 +130,9 @@ export const Login = () => {
                             </label>
                             <input
                                 type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                name="email"
+                                value={form.email}
+                                onChange={handleChange}
                                 required
                                 placeholder="you@example.com"
                                 className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
@@ -104,8 +147,9 @@ export const Login = () => {
                             <div className="relative">
                                 <input
                                     type={showPassword ? "text" : "password"}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    name="password"
+                                    value={form.password}
+                                    onChange={handleChange}
                                     required
                                     placeholder="••••••••"
                                     className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"

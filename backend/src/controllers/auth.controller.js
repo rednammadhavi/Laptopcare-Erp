@@ -1,74 +1,98 @@
 import { User } from "../models/User.models.js";
+import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
 // Generate JWT token
-const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-};
+const generateToken = (user) =>
+    jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+        expiresIn: "7d",
+    });
 
 // Register user
 const registerUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
+
+        // Validate role
+        const validRoles = ["admin", "manager", "technician"];
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({ message: "Invalid role" });
+        }
+
         const userExists = await User.findOne({ email });
-        if (userExists) return res.status(400).json({ message: "User already exists" });
+        if (userExists)
+            return res.status(400).json({ message: "User already exists" });
 
         const user = await User.create({ name, email, password, role });
+
         res.status(201).json({
-            token: generateToken(user._id),
-            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+            message: "User registered successfully",
+            token: generateToken(user),
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
         });
     } catch (error) {
+        console.error("Register Error:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
-// Login user
+// Login user with role validation
 const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, role } = req.body;
+
+        if (!email || !password || !role)
+            return res
+                .status(400)
+                .json({ message: "Please provide email, password and role" });
+
         const user = await User.findOne({ email });
-        if (user && await user.matchPassword(password)) {
-            res.json({
-                token: generateToken(user._id),
-                user: { id: user._id, name: user.name, email: user.email, role: user.role }
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Check if user role matches requested role
+        if (user.role !== role) {
+            return res.status(401).json({
+                message: `Invalid credentials for ${role} role`
             });
-        } else {
-            res.status(401).json({ message: "Invalid credentials" });
         }
+
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch)
+            return res.status(401).json({ message: "Invalid credentials" });
+
+        const token = generateToken(user);
+
+        res.status(200).json({
+            message: "Login successful",
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
+        });
     } catch (error) {
+        console.error("Login Error:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
 // Logout user
 const logoutUser = async (req, res) => {
-
-    await User.findByIdAndUpdate(
-        req.user._id,
-        {
-            $set: {
-                refreshToken: undefined
-            }
-        },
-        {
-            new: true
-        }
-    )
-
-    const options = {
-        httpOnly: true,
-        secure: true
+    try {
+        res.status(200).json({ message: "User logged out successfully" });
+    } catch (error) {
+        console.error("Logout Error:", error);
+        res.status(500).json({ message: "Logout failed", error: error.message });
     }
-
-    return res
-        .status(200)
-        .clearCookie('accessToken', options)
-        .clearCookie('refreshToken', options)
-        .json({ message: "User Logout Successful", error: error.message });
 };
-
 
 // Forgot password
 const forgotPassword = async (req, res) => {
@@ -82,9 +106,9 @@ const forgotPassword = async (req, res) => {
         user.resetPasswordExpire = Date.now() + 3600000; // 1 hour
         await user.save();
 
-        // TODO: Send token via email
         res.json({ message: "Password reset token generated", resetToken });
     } catch (error) {
+        console.error("Forgot Password Error:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
@@ -95,7 +119,7 @@ const resetPassword = async (req, res) => {
         const { token, newPassword } = req.body;
         const user = await User.findOne({
             resetPasswordToken: token,
-            resetPasswordExpire: { $gt: Date.now() }
+            resetPasswordExpire: { $gt: Date.now() },
         });
 
         if (!user) return res.status(400).json({ message: "Invalid or expired token" });
@@ -107,6 +131,7 @@ const resetPassword = async (req, res) => {
 
         res.json({ message: "Password reset successful" });
     } catch (error) {
+        console.error("Reset Password Error:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
@@ -145,5 +170,5 @@ export {
     forgotPassword,
     resetPassword,
     getUser,
-    updateUser
+    updateUser,
 };

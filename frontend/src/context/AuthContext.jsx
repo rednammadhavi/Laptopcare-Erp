@@ -17,17 +17,14 @@ export const AuthProvider = ({ children }) => {
         setApiToken(token);
     }, [token]);
 
-    const loginUser = async (email, password) => {
-        const { data } = await login({ email, password });
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setUser(data.user);
-        setTokenState(data.token);
+    const loginUser = async (userData) => {
+        setUser(userData);
+        setTokenState(localStorage.getItem("token"));
     };
 
     const logoutUser = async () => {
         try {
-            await logout(); // call backend logout
+            await logout();
         } catch (err) {
             console.error("Backend logout failed", err);
         } finally {
@@ -38,8 +35,24 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Check if user has specific role
+    const hasRole = (role) => {
+        return user?.role === role;
+    };
+
+    // Check if user has any of the specified roles
+    const hasAnyRole = (roles) => {
+        return roles.includes(user?.role);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loginUser, logoutUser }}>
+        <AuthContext.Provider value={{
+            user,
+            loginUser,
+            logoutUser,
+            hasRole,
+            hasAnyRole
+        }}>
             {children}
         </AuthContext.Provider>
     );

@@ -10,20 +10,33 @@ export const Register = () => {
         name: "",
         email: "",
         password: "",
-        role: "receptionist",
+        role: "select",
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [roleError, setRoleError] = useState("");
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
+        // Clear role error when user starts selecting
+        if (e.target.name === "role") {
+            setRoleError("");
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
+        setRoleError("");
+
+        // Validate role selection only on submit
+        if (form.role === "select") {
+            setRoleError("Please select a role");
+            setLoading(false);
+            return;
+        }
 
         try {
             await axios.post("/api/auth/register", form);
@@ -73,7 +86,6 @@ export const Register = () => {
 
             {/* RIGHT SIDE - Registration Form */}
             <div className="flex items-center justify-center w-full md:w-1/2 bg-blue-100 p-8 md:p-16">
-                {/* <div className="flex items-center justify-center w-full md:w-1/2 bg-blue-300 p-8 md:p-16"> */}
                 <div className="w-full max-w-md">
                     <div className="text-center mb-8">
                         <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
@@ -152,13 +164,17 @@ export const Register = () => {
                                 name="role"
                                 value={form.role}
                                 onChange={handleChange}
-                                className="w-full border border-gray-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50 hover:bg-white transition"
+                                className={`w-full border p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50 hover:bg-white transition ${roleError ? "border-red-300" : "border-gray-200"
+                                    }`}
                             >
-                                <option value="receptionist">Receptionist</option>
+                                <option value="select">Select</option>
                                 <option value="technician">Technician</option>
                                 <option value="manager">Manager</option>
                                 <option value="admin">Admin</option>
                             </select>
+                            {roleError && (
+                                <p className="text-red-500 text-xs mt-1">{roleError}</p>
+                            )}
                         </div>
 
                         {error && (

@@ -18,22 +18,28 @@ const userSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ["admin", "technician"],
+            enum: ["admin", "manager", "technician"],
             default: "technician"
         },
-    }, { timestamps: true }
+        resetPasswordToken: String,
+        resetPasswordExpire: Date
+    },
+    {
+        timestamps: true
+    }
 );
 
-export const User = mongoose.model("User", userSchema);
-
+// Password encryption before save
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next();
-    this.password = await bcrypt.hash(this.password, 10);
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
     next();
 });
 
-userSchema.methods.matchPassword = async function (password) {
-    return bcrypt.compare(password, this.password);
+// Match password for login
+userSchema.methods.matchPassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
 };
 
-
+export const User = mongoose.model("User", userSchema);
