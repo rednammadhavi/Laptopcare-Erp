@@ -8,16 +8,53 @@ const jobSchema = new mongoose.Schema(
             required: true
         },
         technician: {
-            type: mongoose.Schema.Types.ObjectId, ref: "User"
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
         },
-        description: String,
+        deviceType: {
+            type: String,
+            required: true,
+            default: "Laptop"
+        },
+        brand: {
+            type: String,
+            default: ""
+        },
+        model: {
+            type: String,
+            default: ""
+        },
+        serialNumber: {
+            type: String,
+            default: ""
+        },
+        issue: {
+            type: String,
+            required: true
+        },
+        problemDescription: {
+            type: String,
+            default: ""
+        },
+        priority: {
+            type: String,
+            enum: ["Low", "Medium", "High", "Urgent"],
+            default: "Medium"
+        },
         status: {
             type: String,
-            enum: ["pending", "in-progress", "completed"],
-            default: "pending"
+            enum: ["New", "Diagnosing", "In Progress", "Waiting for Parts", "Ready for Pickup", "Completed", "Cancelled"],
+            default: "New"
         },
-        scheduledDate: Date,
-    }, { timestamps: true }
+        estimatedCost: Number,
+        actualCost: Number,
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
+        }
+    },
+    { timestamps: true }
 );
 
 export const Job = mongoose.model("Job", jobSchema);

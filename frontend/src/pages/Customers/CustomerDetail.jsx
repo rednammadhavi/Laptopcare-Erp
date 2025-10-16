@@ -1,141 +1,77 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import {
-    getCustomer,
-    createCustomer,
-    updateCustomer,
-    getUsers
-} from "../../api/api"; // import individual APIs
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { getCustomer } from "../../api/api";
 
 export const CustomerDetail = () => {
-    const navigate = useNavigate();
     const { id } = useParams();
-    const isNew = id === "new";
-
-    const [formData, setFormData] = useState({
-        name: "",
-        phone: "",
-        email: "",
-        address: "",
-        preferredTechnician: "",
-    });
-    const [technicians, setTechnicians] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+    const { hasRole } = useAuth();
+    const [customer, setCustomer] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     useEffect(() => {
-        const loadData = async () => {
-            setLoading(true);
-            try {
-                const techRes = await getUsers({ role: "Technician" });
-                setTechnicians(techRes.data);
-
-                if (!isNew) {
-                    const res = await getCustomer(id);
-                    setFormData(res.data);
-                }
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadData();
+        fetchCustomer();
     }, [id]);
 
-    const handleChange = (e) =>
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const fetchCustomer = async () => {
         try {
-            if (isNew) await createCustomer(formData);
-            else await updateCustomer(id, formData);
-            navigate("/customers");
+            const response = await getCustomer(id);
+            setCustomer(response.data);
         } catch (err) {
-            console.error(err);
+            setError("Failed to fetch customer details");
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (loading) return <div className="p-6 text-gray-600">Loading...</div>;
+    if (loading) return <div className="p-4">Loading customer details...</div>;
+    if (error) return <div className="p-4 text-red-600">{error}</div>;
+    if (!customer) return <div className="p-4">Customer not found</div>;
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">
-                {isNew ? "Add New Customer" : "Edit Customer"}
-            </h1>
-            <div className="bg-white p-6 rounded-xl shadow-sm border">
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Name</label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            className="w-full border p-2 rounded"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Phone</label>
-                        <input
-                            type="text"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            className="w-full border p-2 rounded"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Email</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="w-full border p-2 rounded"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Address</label>
-                        <input
-                            type="text"
-                            name="address"
-                            value={formData.address}
-                            onChange={handleChange}
-                            className="w-full border p-2 rounded"
-                        />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium mb-1">Preferred Technician</label>
-                        <select
-                            name="preferredTechnician"
-                            value={formData.preferredTechnician}
-                            onChange={handleChange}
-                            className="w-full border p-2 rounded"
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold">Customer Details</h1>
+                <div className="flex gap-4">
+                    {hasRole(['admin', 'manager']) && (
+                        <Link
+                            to={`/customers/${customer._id}/edit`}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                         >
-                            <option value="">Select Technician</option>
-                            {technicians.map((t) => (
-                                <option key={t._id} value={t._id}>
-                                    {t.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                            Edit Customer
+                        </Link>
+                    )}
+                    <button
+                        onClick={() => navigate('/customers')}
+                        className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                    >
+                        Back to Customers
+                    </button>
+                </div>
+            </div>
 
-                    <div className="sm:col-span-2">
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-blue-600 text-white rounded"
-                        >
-                            {isNew ? "Create" : "Update"}
-                        </button>
+            <div className="bg-white rounded-lg shadow p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
+                        <div className="space-y-3">
+                            <p><strong>Name:</strong> {customer.name}</p>
+                            <p><strong>Email:</strong> {customer.email || 'N/A'}</p>
+                            <p><strong>Phone:</strong> {customer.phone || 'N/A'}</p>
+                        </div>
                     </div>
-                </form>
+                    <div>
+                        <h3 className="text-lg font-semibold mb-4">Additional Information</h3>
+                        <div className="space-y-3">
+                            <p><strong>Address:</strong> {customer.address || 'N/A'}</p>
+                            <p><strong>Preferred Technician:</strong> {customer.preferredTechnician?.name || 'None'}</p>
+                            <p><strong>Created:</strong> {new Date(customer.createdAt).toLocaleDateString()}</p>
+                            <p><strong>Last Updated:</strong> {new Date(customer.updatedAt).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

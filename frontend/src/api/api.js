@@ -21,11 +21,17 @@ export const getCustomers = () => api.get("/customers");
 export const getCustomer = (id) => api.get(`/customers/${id}`);
 export const createCustomer = (data) => api.post("/customers", data);
 export const updateCustomer = (id, data) => api.put(`/customers/${id}`, data);
+export const deleteCustomer = (id) => api.delete(`/customers/${id}`);
+export const getTechniciansList = () => api.get("/customers/technicians/list");
+export const getMyCustomers = () => api.get("/customers/my-customers");
 
 // Jobs
 export const getJobs = () => api.get("/jobs");
+export const getMyJobs = () => api.get("/jobs/my-jobs");
+export const getJob = (id) => api.get(`/jobs/${id}`);
 export const createJob = (data) => api.post("/jobs", data);
 export const updateJob = (id, data) => api.put(`/jobs/${id}`, data);
+export const deleteJob = (id) => api.delete(`/jobs/${id}`);
 
 // Inventory
 export const getInventory = () => api.get("/inventory");
@@ -36,7 +42,7 @@ export const deleteInventory = (id) => api.delete(`/inventory/${id}`);
 // Reports
 export const getReports = () => api.get("/reports");
 
-// Users
+// Users (if needed for technicians dropdown)
 export const getUsers = (params) => api.get("/auth/users", { params });
 
 export default api;

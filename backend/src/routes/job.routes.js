@@ -1,23 +1,29 @@
 import express from "express";
-import { authorizeRoles } from "../middlewares/auth.middleware.js";
+import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
 import {
     createJob,
     getAllJobs,
     getJobById,
     updateJob,
-    deleteJob
+    deleteJob,
+    getMyJobs,
 } from "../controllers/job.controller.js";
 
 const router = express.Router();
 
-// Admin & Manager: Full access
-router.route("/")
-    .get(authorizeRoles("Admin", "Manager"), getAllJobs)
-    .post(authorizeRoles("Admin", "Manager", "Receptionist"), createJob);
+router.use(verifyJWT);
 
-router.route("/:id")
-    .get(authorizeRoles("Admin", "Manager", "Technician"), getJobById)
-    .put(authorizeRoles("Admin", "Manager", "Technician"), updateJob)
-    .delete(authorizeRoles("Admin", "Manager"), deleteJob);
+router.get("/my-jobs", authorizeRoles("technician"), getMyJobs);
+
+router
+    .route("/")
+    .get(authorizeRoles("admin", "manager", "technician"), getAllJobs)
+    .post(authorizeRoles("admin", "manager"), createJob);
+
+router
+    .route("/:id")
+    .get(authorizeRoles("admin", "manager", "technician"), getJobById)
+    .put(authorizeRoles("admin", "manager", "technician"), updateJob)
+    .delete(authorizeRoles("admin", "manager"), deleteJob);
 
 export default router;

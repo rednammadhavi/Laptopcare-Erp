@@ -10,7 +10,14 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user")) || null);
+    const [user, setUser] = useState(() => {
+        try {
+            const storedUser = localStorage.getItem("user");
+            return storedUser ? JSON.parse(storedUser) : null;
+        } catch {
+            return null;
+        }
+    });
     const [token, setTokenState] = useState(() => localStorage.getItem("token") || null);
 
     useEffect(() => {
@@ -35,14 +42,18 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Check if user has specific role
-    const hasRole = (role) => {
-        return user?.role === role;
+    const hasRole = (roles) => {
+        if (!user || !user.role) return false;
+
+        if (Array.isArray(roles)) {
+            return roles.includes(user.role);
+        }
+        return user.role === roles;
     };
 
     // Check if user has any of the specified roles
     const hasAnyRole = (roles) => {
-        return roles.includes(user?.role);
+        return hasRole(roles);
     };
 
     return (
