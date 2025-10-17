@@ -46,8 +46,8 @@ export const Sidebar = () => {
             </div>
             <nav className="p-4 space-y-1">
                 <NavItem to="/" label="Dashboard">🏠</NavItem>
-                <NavItem to="/customers" label="Customers" roles={['admin', 'manager', 'receptionist', 'technician']}>👥</NavItem>
-                <NavItem to="/jobs" label="Jobs">🛠️</NavItem>
+                <NavItem to="/customers" label="Customers" roles={['admin', 'manager', 'receptionist']}>👥</NavItem>
+                <NavItem to="/jobs" label="Jobs" roles={['admin', 'manager', 'technician']}>🛠️</NavItem>
                 <NavItem to="/inventory" label="Inventory" roles={['admin', 'manager']}>📦</NavItem>
                 <NavItem to="/reports" label="Reports" roles={['admin', 'manager']}>📊</NavItem>
             </nav>

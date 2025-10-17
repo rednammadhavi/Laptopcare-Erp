@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getCustomers, deleteCustomer, getMyCustomers } from "../../api/api";
+import { getCustomers, getMyCustomers } from "../../api/api";
 
 export const CustomersList = () => {
     const { user, hasRole } = useAuth();
@@ -31,22 +31,14 @@ export const CustomersList = () => {
         }
     };
 
-    const handleDelete = async (customerId) => {
-        if (!window.confirm("Are you sure you want to delete this customer?")) {
-            return;
-        }
-
-        try {
-            await deleteCustomer(customerId);
-            setCustomers(customers.filter(customer => customer._id !== customerId));
-        } catch (err) {
-            setError("Failed to delete customer");
-        }
+    const refreshCustomers = () => {
+        setLoading(true);
+        fetchCustomers();
     };
 
-    // Check if customer has an assigned job/technician
-    const hasAssignedJob = (customer) => {
-        return customer.preferredTechnician || customer.assignedJob;
+    // Check if customer has an assigned technician
+    const hasAssignedTechnician = (customer) => {
+        return customer.preferredTechnician && customer.preferredTechnician._id;
     };
 
     const getStatusColor = (status) => {
@@ -99,6 +91,7 @@ export const CustomersList = () => {
     const activeCustomers = customers.filter(c => !['Completed', 'Cancelled'].includes(c.status)).length;
     const newCustomers = customers.filter(c => c.status === 'New').length;
     const inProgressCustomers = customers.filter(c => c.status === 'In Progress').length;
+    const assignedCustomers = customers.filter(c => hasAssignedTechnician(c)).length;
 
     if (loading) return <div className="p-4">Loading customers...</div>;
     if (error) return <div className="p-4 text-red-600">{error}</div>;
@@ -113,29 +106,42 @@ export const CustomersList = () => {
                     </h1>
                     <p className="text-sm text-gray-600 mt-1">
                         {hasRole('technician')
-                            ? 'Viewing your assigned repair customers'
+                            ? 'Your assigned repair customers'
                             : 'Manage all customer records and repair status'
                         }
                     </p>
                 </div>
 
-                {/* Add Customer Button */}
-                {hasRole(['admin', 'manager', 'receptionist']) ? (
-                    <Link
-                        to="/customers/new"
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                <div className="flex gap-4">
+                    {/* Refresh Button */}
+                    <button
+                        onClick={refreshCustomers}
+                        className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
                     >
-                        <span>+</span>
-                        Add New Customer
-                    </Link>
-                ) : (
-                    <div className="text-sm text-gray-500">
-                        {hasRole('technician')
-                            ? 'Contact receptionist for new customer registration'
-                            : 'Only authorized staff can create customers'
-                        }
-                    </div>
-                )}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                    </button>
+
+                    {/* Add Customer Button */}
+                    {hasRole(['admin', 'manager', 'receptionist']) ? (
+                        <Link
+                            to="/customers/new"
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        >
+                            <span>+</span>
+                            Add New Customer
+                        </Link>
+                    ) : (
+                        <div className="text-sm text-gray-500">
+                            {hasRole('technician')
+                                ? 'Contact receptionist for new customer registration'
+                                : 'Only authorized staff can create customers'
+                            }
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Stats Summary */}
@@ -153,8 +159,8 @@ export const CustomersList = () => {
                     <div className="text-sm text-gray-600">In Progress</div>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border">
-                    <div className="text-2xl font-bold text-green-600">{activeCustomers}</div>
-                    <div className="text-sm text-gray-600">Active</div>
+                    <div className="text-2xl font-bold text-green-600">{assignedCustomers}</div>
+                    <div className="text-sm text-gray-600">Assigned</div>
                 </div>
             </div>
 
@@ -226,16 +232,12 @@ export const CustomersList = () => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Priority
                                 </th>
-                                {!hasRole('technician') && (
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Assigned To
-                                    </th>
-                                )}
-                                {(hasRole(['admin', 'manager', 'receptionist'])) && (
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                )}
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Technician
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {/* Empty header for actions */}
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -295,79 +297,45 @@ export const CustomersList = () => {
                                         </span>
                                     </td>
 
-                                    {/* Assigned Technician */}
-                                    {!hasRole('technician') && (
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {customer.preferredTechnician?.name || (
-                                                <span className="text-gray-400 italic">Unassigned</span>
-                                            )}
-                                        </td>
-                                    )}
+                                    {/* Technician */}
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {customer.preferredTechnician?.name || (
+                                            <span className="text-gray-400 italic">Unassigned</span>
+                                        )}
+                                    </td>
 
                                     {/* Actions */}
-                                    {(hasRole(['admin', 'manager', 'receptionist'])) && (
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <div className="flex items-center space-x-3">
-                                                {/* Edit Button */}
-                                                <Link
-                                                    to={`/customers/${customer._id}/edit`}
-                                                    className="text-blue-600 hover:text-blue-900 transition-colors"
-                                                    title="Edit Customer"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div className="flex items-center space-x-3">
+                                            {/* View Details Button */}
+                                            <Link
+                                                to={`/customers/${customer._id}`}
+                                                className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded text-xs"
+                                            >
+                                                View Details
+                                            </Link>
+
+                                            {/* Checkbox for assigned technician */}
+                                            {hasAssignedTechnician(customer) && (
+                                                <div className="text-green-600" title="Assigned to Technician">
+                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                     </svg>
-                                                </Link>
+                                                </div>
+                                            )}
 
-                                                {/* View Details Button */}
+                                            {/* Assign Job Button - Only for admin/manager when no technician assigned */}
+                                            {hasRole(['admin', 'manager']) && !hasAssignedTechnician(customer) && (
                                                 <Link
-                                                    to={`/customers/${customer._id}`}
-                                                    className="text-green-600 hover:text-green-900 transition-colors"
-                                                    title="View Details"
+                                                    to={`/jobs/new?customer=${customer._id}`}
+                                                    className="text-purple-600 hover:text-purple-900 bg-purple-50 px-3 py-1 rounded text-xs"
+                                                    title="Assign Technician"
                                                 >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                    </svg>
+                                                    Assign
                                                 </Link>
-
-                                                {/* Assign Job Button - Show + icon if unassigned, tick icon if assigned */}
-                                                {hasRole(['admin', 'manager']) && (
-                                                    <Link
-                                                        to={`/jobs/new?customer=${customer._id}`}
-                                                        className={`transition-colors ${hasAssignedJob(customer)
-                                                                ? "text-green-600 hover:text-green-900"
-                                                                : "text-purple-600 hover:text-purple-900"
-                                                            }`}
-                                                        title={hasAssignedJob(customer) ? "Technician Assigned" : "Assign Technician"}
-                                                    >
-                                                        {hasAssignedJob(customer) ? (
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                            </svg>
-                                                        ) : (
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                            </svg>
-                                                        )}
-                                                    </Link>
-                                                )}
-
-                                                {/* Delete Button - Only for admin and manager */}
-                                                {hasRole(['admin', 'manager']) && (
-                                                    <button
-                                                        onClick={() => handleDelete(customer._id)}
-                                                        className="text-red-600 hover:text-red-900 transition-colors"
-                                                        title="Delete Customer"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    )}
+                                            )}
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -409,6 +377,7 @@ export const CustomersList = () => {
                 <p className="text-sm text-gray-500">
                     Showing {filteredCustomers.length} of {customers.length} customers
                     {searchTerm && ` • Searching for "${searchTerm}"`}
+                    {filter !== "all" && ` • Filtered by ${filter}`}
                 </p>
             </div>
         </div>

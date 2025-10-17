@@ -58,6 +58,7 @@ export const JobsPage = () => {
 
     return (
         <div className="p-6">
+            {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">
@@ -116,16 +117,13 @@ export const JobsPage = () => {
                                     Customer
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Device
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Status
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Assigned To
+                                    Technician
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
+                                    {/* Actions - Empty header */}
                                 </th>
                             </tr>
                         </thead>
@@ -135,16 +133,11 @@ export const JobsPage = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                         #{job._id.slice(-6)}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4">
                                         <div className="text-sm font-medium text-gray-900">
                                             {job.customer?.name || 'Unknown Customer'}
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                            {job.customer?.phone || 'No phone'}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900">
                                             {job.deviceType} - {job.brand} {job.model}
                                         </div>
                                     </td>
@@ -159,7 +152,7 @@ export const JobsPage = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <Link
                                             to={`/jobs/${job._id}`}
-                                            className="text-blue-600 hover:text-blue-900"
+                                            className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded text-xs"
                                         >
                                             View Details
                                         </Link>
@@ -178,24 +171,25 @@ export const JobsPage = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-1">No jobs found</h3>
-                        <p className="text-gray-500 mb-4">
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">
+                            {filter === "all" ? "No jobs found" : `No ${filter} jobs found`}
+                        </h3>
+                        <p className="text-gray-500">
                             {filter === "all"
                                 ? "There are no jobs in the system yet."
-                                : `No ${filter} jobs found.`
+                                : `No ${filter} jobs match the current filter.`
                             }
                         </p>
-                        {hasRole(['admin', 'manager', 'receptionist']) && (
-                            <Link
-                                to="/jobs/new"
-                                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm inline-flex items-center gap-2"
-                            >
-                                <span>+</span>
-                                Create Your First Job
-                            </Link>
-                        )}
                     </div>
                 )}
+            </div>
+
+            {/* Footer Info */}
+            <div className="mt-4 text-center">
+                <p className="text-sm text-gray-500">
+                    Showing {filteredJobs.length} of {jobs.length} jobs
+                    {filter !== "all" && ` • Filtered by ${filter}`}
+                </p>
             </div>
         </div>
     );

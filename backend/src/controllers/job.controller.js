@@ -1,5 +1,6 @@
 import { Job } from "../models/Job.models.js";
 import { Customer } from "../models/Customer.models.js";
+import { User } from "../models/User.models.js";
 
 // Get all jobs (Admin, Manager, Technician)
 const getAllJobs = async (req, res) => {
@@ -33,6 +34,7 @@ const getJobById = async (req, res) => {
 
         if (!job) return res.status(404).json({ message: "Job not found" });
 
+        // Technicians can only access jobs assigned to them
         if (
             req.user.role === "technician" &&
             job.technician?._id.toString() !== req.user._id.toString()
@@ -47,29 +49,74 @@ const getJobById = async (req, res) => {
     }
 };
 
-// Create job (Admin, Manager, Receptionist)
+// Create job (Admin & Manager only - enforced by route middleware)
 const createJob = async (req, res) => {
     try {
-        const { title, description, assignedTo, status } = req.body;
-        if (!title || !description) {
-            return res.status(400).json({ message: "Title and description are required" });
+        const {
+            customer,
+            technician,
+            deviceType,
+            brand,
+            model,
+            serialNumber,
+            issue,
+            problemDescription,
+            priority,
+            status,
+            estimatedCost
+        } = req.body;
+
+        // Validate required fields
+        if (!customer || !technician || !issue) {
+            return res.status(400).json({
+                message: "Customer, technician, and issue are required fields"
+            });
+        }
+
+        // Verify customer exists
+        const customerExists = await Customer.findById(customer);
+        if (!customerExists) {
+            return res.status(404).json({ message: "Customer not found" });
+        }
+
+        // Verify technician exists and has technician role
+        const technicianUser = await User.findById(technician);
+        if (!technicianUser || technicianUser.role !== 'technician') {
+            return res.status(400).json({ message: "Invalid technician selected" });
         }
 
         const job = await Job.create({
-            title,
-            description,
-            assignedTo,
-            status: status || "Pending",
-            createdBy: req.user.id,
+            customer,
+            technician,
+            deviceType: deviceType || "Laptop",
+            brand,
+            model,
+            serialNumber,
+            issue,
+            problemDescription,
+            priority: priority || "Medium",
+            status: status || "New",
+            estimatedCost,
+            createdBy: req.user._id,
         });
 
-        res.status(201).json(job);
+        // Populate the created job with customer and technician details
+        const populatedJob = await Job.findById(job._id)
+            .populate("customer", "name email phone")
+            .populate("technician", "name email");
+
+        res.status(201).json({
+            message: "Job created successfully",
+            job: populatedJob
+        });
     } catch (error) {
         console.error("Error creating job:", error);
-        res.status(500).json({ message: "Error creating job", error: error.message });
+        res.status(500).json({
+            message: "Error creating job",
+            error: error.message
+        });
     }
 };
-
 
 // Update job (Role-based)
 const updateJob = async (req, res) => {
@@ -77,22 +124,44 @@ const updateJob = async (req, res) => {
         const job = await Job.findById(req.params.id);
         if (!job) return res.status(404).json({ message: "Job not found" });
 
+        // Role-based update restrictions
         if (req.user.role === "technician") {
+            // Technicians can only update jobs assigned to them
             if (job.technician?.toString() !== req.user._id.toString()) {
                 return res.status(403).json({ message: "Access denied" });
             }
 
-            const allowedFields = ["status", "repairDetails", "actualCost"];
-            for (const field of allowedFields) {
-                if (req.body[field] !== undefined) job[field] = req.body[field];
-            }
+            // Technicians can only update specific fields
+            const allowedFields = ["status", "problemDescription", "actualCost"];
+            const updateData = {};
+
+            allowedFields.forEach(field => {
+                if (req.body[field] !== undefined) {
+                    updateData[field] = req.body[field];
+                }
+            });
+
+            // Apply updates
+            Object.assign(job, updateData);
         } else {
-            Object.assign(job, req.body);
+            // Admin & Manager can update all fields except createdBy
+            const updateData = { ...req.body };
+            delete updateData.createdBy;
+
+            // Validate technician if changing
+            if (updateData.technician && updateData.technician !== job.technician?.toString()) {
+                const technicianUser = await User.findById(updateData.technician);
+                if (!technicianUser || technicianUser.role !== 'technician') {
+                    return res.status(400).json({ message: "Invalid technician selected" });
+                }
+            }
+
+            Object.assign(job, updateData);
         }
 
         await job.save();
 
-        const updatedJob = await job
+        const updatedJob = await Job.findById(job._id)
             .populate("customer", "name email phone")
             .populate("technician", "name email");
 
@@ -106,7 +175,7 @@ const updateJob = async (req, res) => {
     }
 };
 
-// Delete job (Admin, Manager)
+// Delete job (Admin & Manager only - enforced by route middleware)
 const deleteJob = async (req, res) => {
     try {
         const job = await Job.findByIdAndDelete(req.params.id);
