@@ -2,15 +2,15 @@ import { Job } from "../models/Job.models.js";
 import { Inventory } from "../models/Inventory.models.js";
 
 const getReports = async (req, res) => {
-    const totalJobs = await Job.countDocuments();
-    const pendingJobs = await Job.countDocuments({ status: "Pending" });
-    const inventoryItems = await Inventory.countDocuments();
-
+    const [totalJobs, completedJobs, pendingJobs, totalInventory, lowStock] = await Promise.all([
+        Job.countDocuments(),
+        Job.countDocuments({ status: "Completed" }),
+        Job.countDocuments({ status: { $nin: ["Completed", "Cancelled"] } }),
+        Inventory.countDocuments(),
+        Inventory.countDocuments({ quantity: { $lt: 5 } })
+    ]);
     res.json({
-        totalJobs,
-        pendingJobs,
-        inventoryItems,
-        generatedAt: new Date(),
+        totalJobs, completedJobs, pendingJobs, totalInventory, lowStock, generatedAt: new Date()
     });
 };
 

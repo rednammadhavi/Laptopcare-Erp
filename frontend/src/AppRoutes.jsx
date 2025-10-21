@@ -16,9 +16,6 @@ import { CustomersList } from "./pages/Customers/CustomersList";
 import { CustomerDetail } from "./pages/Customers/CustomerDetail";
 import { CustomerForm } from "./pages/Customers/CustomerForm";
 
-import { TechnicianList } from "./pages/Technician/TechnicianList";
-import { TechnicianDetail } from "./pages/Technician/TechnicianDetail";
-
 import { JobsPage } from "./pages/Jobs/Jobs";
 import { JobForm } from "./pages/Jobs/JobForm";
 import { JobDetail } from "./pages/Jobs/JobDetail";
@@ -73,7 +70,7 @@ const AppRoutes = () => (
 
         {/* Customer Management */}
         <Route path="/customers" element={
-            <RequireAuth roles={['admin', 'manager', 'technician']}>
+            <RequireAuth roles={['admin', 'manager', 'receptionist']}>
                 <Layout><CustomersList /></Layout>
             </RequireAuth>
         } />
@@ -83,25 +80,13 @@ const AppRoutes = () => (
             </RequireAuth>
         } />
         <Route path="/customers/:id" element={
-            <RequireAuth roles={['admin', 'manager', 'technician', 'receptionist']}>
+            <RequireAuth roles={['admin', 'manager', 'receptionist']}>
                 <Layout><CustomerDetail /></Layout>
             </RequireAuth>
         } />
         <Route path="/customers/:id/edit" element={
             <RequireAuth roles={['admin', 'manager', 'receptionist']}>
                 <Layout><CustomerForm /></Layout>
-            </RequireAuth>
-        } />
-
-        {/* Technician Management */}
-        <Route path="/technicians" element={
-            <RequireAuth roles={['admin', 'manager']}>
-                <Layout><TechnicianList /></Layout>
-            </RequireAuth>
-        } />
-        <Route path="/technicians/:id" element={
-            <RequireAuth roles={['admin', 'manager']}>
-                <Layout><TechnicianDetail /></Layout>
             </RequireAuth>
         } />
 

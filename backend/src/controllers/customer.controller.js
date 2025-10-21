@@ -1,7 +1,7 @@
 import { Customer } from "../models/Customer.models.js";
 import { User } from "../models/User.models.js";
 
-// Get all customers (with role-based filtering)
+// Get all customers
 const getCustomers = async (req, res) => {
     try {
         let customers;
@@ -11,6 +11,9 @@ const getCustomers = async (req, res) => {
             customers = await Customer.find({
                 preferredTechnician: req.user._id
             }).populate("preferredTechnician", "name email");
+        } else if (req.user.role === "receptionist") {
+            // Receptionists can see all customers but can't see technician assignments in some cases
+            customers = await Customer.find().populate("preferredTechnician", "name email");
         } else {
             // Admin & Manager see all customers
             customers = await Customer.find().populate("preferredTechnician", "name email");
@@ -92,6 +95,20 @@ const updateCustomer = async (req, res) => {
                     data[field] = req.body[field];
                 }
             });
+        } else if (req.user.role === "receptionist") {
+            // Receptionists can update basic customer info but not technician assignments
+            const allowedUpdates = ["name", "email", "phone", "address", "deviceType", "brand", "model", "problemDescription", "notes"];
+            data = {};
+            allowedUpdates.forEach(field => {
+                if (req.body[field] !== undefined) {
+                    data[field] = req.body[field];
+                }
+            });
+
+            // Receptionists cannot change technician assignment or status beyond "New"
+            if (req.body.status && req.body.status !== "New") {
+                return res.status(403).json({ message: "Receptionists can only set status to 'New'" });
+            }
         } else {
             // Admin & Manager can update everything except createdBy
             delete data.createdBy;

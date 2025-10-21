@@ -23,12 +23,12 @@ router.get("/my-customers", authorizeRoles('technician'), getMyCustomers);
 
 // Customer routes with role-based access
 router.route("/")
-    .get(authorizeRoles('admin', 'manager', 'technician'), getCustomers)
-    .post(authorizeRoles('admin', 'manager'), createCustomer);
+    .get(authorizeRoles('admin', 'manager', 'receptionist'), getCustomers)
+    .post(authorizeRoles('admin', 'manager', 'receptionist'), createCustomer);
 
 router.route("/:id")
-    .get(authorizeRoles('admin', 'manager', 'technician'), getCustomer)
-    .put(authorizeRoles('admin', 'manager', 'technician'), updateCustomer)
+    .get(authorizeRoles('admin', 'manager', 'receptionist', 'technician'), getCustomer)
+    .put(authorizeRoles('admin', 'manager', 'receptionist', 'technician'), updateCustomer)
     .delete(authorizeRoles('admin', 'manager'), deleteCustomer);
 
 export default router;

@@ -1,90 +1,104 @@
 import React, { useEffect, useState } from "react";
-import {
-    getInventory,
-    createInventory,
-    updateInventory,
-    deleteInventory,
-} from "../api/api";
+import { getInventory } from "../api/api";
 
 export const Inventory = () => {
     const [items, setItems] = useState([]);
-    const [form, setForm] = useState({ name: "", category: "", quantity: 0, price: 0, supplier: "", description: "" });
-    const [editingId, setEditingId] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
 
     useEffect(() => {
         fetchItems();
     }, []);
 
     const fetchItems = async () => {
-        const data = await getInventory();
-        setItems(data);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (editingId) {
-            await updateInventory(editingId, form);
-            setEditingId(null);
-        } else {
-            await createInventory(form);
+        try {
+            const res = await getInventory();
+            setItems(Array.isArray(res.data) ? res.data : []);
+        } catch (error) {
+            console.error("Error fetching inventory:", error);
+        } finally {
+            setLoading(false);
         }
-        setForm({ name: "", category: "", quantity: 0, price: 0, supplier: "", description: "" });
-        fetchItems();
     };
 
-    const handleEdit = (item) => {
-        setForm(item);
-        setEditingId(item._id);
-    };
+    // Filter items based on search input
+    const filteredItems = items.filter(
+        (item) =>
+            item.name.toLowerCase().includes(search.toLowerCase()) ||
+            (item.category && item.category.toLowerCase().includes(search.toLowerCase()))
+    );
 
-    const handleDelete = async (id) => {
-        await deleteInventory(id);
-        fetchItems();
-    };
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64 text-lg text-gray-500">
+                Loading inventory...
+            </div>
+        );
+    }
 
     return (
-        <div className="p-4">
-            <h2 className="text-2xl font-bold mb-4">Inventory Management</h2>
+        <div className="p-6">
+            <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
+                Spare Parts Inventory
+            </h2>
 
-            <form onSubmit={handleSubmit} className="mb-4 space-y-2">
-                <input placeholder="Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="border p-2 w-full" />
-                <input placeholder="Category" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="border p-2 w-full" />
-                <input type="number" placeholder="Quantity" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} className="border p-2 w-full" />
-                <input type="number" placeholder="Price" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="border p-2 w-full" />
-                <input placeholder="Supplier" value={form.supplier} onChange={e => setForm({ ...form, supplier: e.target.value })} className="border p-2 w-full" />
-                <textarea placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="border p-2 w-full" />
-                <button type="submit" className="bg-blue-500 text-white p-2 rounded">
-                    {editingId ? "Update Item" : "Add Item"}
-                </button>
-            </form>
+            {/* Search Bar */}
+            <div className="mb-6 flex justify-center">
+                <input
+                    type="text"
+                    placeholder="Search by name or category..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full max-w-md px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
 
-            <table className="w-full border">
-                <thead>
-                    <tr className="border">
-                        <th className="border p-2">Name</th>
-                        <th className="border p-2">Category</th>
-                        <th className="border p-2">Quantity</th>
-                        <th className="border p-2">Price</th>
-                        <th className="border p-2">Supplier</th>
-                        <th className="border p-2">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {items.map(item => (
-                        <tr key={item._id} className="border">
-                            <td className="border p-2">{item.name}</td>
-                            <td className="border p-2">{item.category}</td>
-                            <td className="border p-2">{item.quantity}</td>
-                            <td className="border p-2">{item.price}</td>
-                            <td className="border p-2">{item.supplier}</td>
-                            <td className="border p-2 space-x-2">
-                                <button onClick={() => handleEdit(item)} className="bg-yellow-500 text-white p-1 rounded">Edit</button>
-                                <button onClick={() => handleDelete(item._id)} className="bg-red-500 text-white p-1 rounded">Delete</button>
-                            </td>
-                        </tr>
+            {/* Inventory Grid */}
+            {filteredItems.length === 0 ? (
+                <p className="text-center text-gray-500">No items found.</p>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredItems.map((item) => (
+                        <div
+                            key={item._id}
+                            className="bg-white shadow-lg rounded-2xl overflow-hidden border hover:shadow-2xl transition"
+                        >
+                            <img
+                                src={
+                                    item.image ||
+                                    "https://cdn-icons-png.flaticon.com/512/2689/2689493.png"
+                                }
+                                alt={item.name}
+                                className="w-full h-48 object-cover"
+                            />
+                            <div className="p-4 space-y-2">
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                    {item.name}
+                                </h3>
+                                <p className="text-sm text-gray-500">{item.category}</p>
+
+                                <div className="flex justify-between items-center">
+                                    <p className="text-sm text-gray-700">
+                                        💰 <span className="font-medium">₹{item.price}</span>
+                                    </p>
+                                    <p
+                                        className={`text-sm font-medium ${item.quantity < 5 ? "text-red-500" : "text-green-600"
+                                            }`}
+                                    >
+                                        Stock: {item.quantity}
+                                    </p>
+                                </div>
+
+                                {item.description && (
+                                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                                        {item.description}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
                     ))}
-                </tbody>
-            </table>
+                </div>
+            )}
         </div>
     );
 };

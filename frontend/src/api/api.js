@@ -42,6 +42,8 @@ export const deleteInventory = (id) => api.delete(`/inventory/${id}`);
 // Reports
 export const getReports = () => api.get("/reports");
 
+export const assignTechnicianToCustomer = (customerId) => api.patch(`/customers/${customerId}/assign-technician`);
+
 // Users (if needed for technicians dropdown)
 export const getUsers = (params) => api.get("/auth/users", { params });
 
